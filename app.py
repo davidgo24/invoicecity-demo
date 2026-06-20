@@ -19,15 +19,19 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(__file__)
 INSTANCE_DIR = os.path.join(BASE_DIR, 'instance')
-os.makedirs(INSTANCE_DIR, exist_ok=True)
+DATA_DIR = os.getenv('DATA_DIR') or os.getenv('RAILWAY_VOLUME_MOUNT_PATH') or INSTANCE_DIR
+os.makedirs(DATA_DIR, exist_ok=True)
+
+UPLOAD_DIR = os.getenv('UPLOAD_FOLDER', os.path.join(DATA_DIR, 'uploads'))
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'invoice-city-dev-key-change-in-prod')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
     'DATABASE_URL',
-    f'sqlite:///{os.path.join(INSTANCE_DIR, "invoice_city.db")}',
+    f'sqlite:///{os.path.join(DATA_DIR, "invoice_city.db")}',
 )
-app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
+app.config['UPLOAD_FOLDER'] = UPLOAD_DIR
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 ALLOWED_EXTENSIONS = {'pdf'}

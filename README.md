@@ -41,3 +41,32 @@ Finance-AP · Transit · Fire · Public Works · Police · Parks and Rec
 4. Share the URL Render gives you (e.g. `https://invoicecity-demo.onrender.com`).
 
 Demo logins work on the live site — same emails/passwords as above.
+
+## Deploy on Railway (recommended if you have an account)
+
+### Option A — GitHub (easiest)
+
+1. Push this repo to GitHub (already at `davidgo24/invoicecity-demo`).
+2. [Railway dashboard](https://railway.com/new) → **Deploy from GitHub repo** → select `invoicecity-demo`.
+3. **Variables** tab → add:
+   - `SECRET_KEY` — any long random string
+   - `DATA_DIR` — `/data` (after step 4)
+4. Service → **Volumes** → **Add volume** → mount path `/data`  
+   (Premium: keeps SQLite + uploaded PDFs across redeploys.)
+5. **Settings** → **Generate domain** → share that URL.
+
+First deploy auto-seeds demo data. Cold start ~30s.
+
+### Option B — CLI
+
+```bash
+cd invoicecity-demo
+railway login
+railway init          # new project, link this folder
+railway volume add --mount-path /data
+railway variables set SECRET_KEY=your-random-secret DATA_DIR=/data
+railway up
+railway domain        # generate public URL
+```
+
+Demo logins are the same on Railway.
