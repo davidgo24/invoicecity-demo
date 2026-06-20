@@ -58,6 +58,22 @@ STATUS_LABELS = {
     'paid': 'Paid',
 }
 
+STATUS_HELP = {
+    'received': 'Waiting for the city to pick this up.',
+    'in_review': 'City staff are reviewing the invoice and PDF.',
+    'approved_for_payment': 'Approved on paper — ready for payment processing.',
+    'returned': 'Waiting on vendor to fix and resubmit.',
+    'paid': 'Payment recorded — this file is complete.',
+}
+
+STATUS_HELP_VENDOR = {
+    'received': 'Submitted — the city has not finished reviewing yet.',
+    'in_review': 'The city is reviewing your invoice.',
+    'approved_for_payment': 'Approved for payment — waiting on the city to pay.',
+    'returned': 'Fix the issue noted below, then resubmit.',
+    'paid': 'Paid — no action needed.',
+}
+
 PO_LINE_CATEGORIES = {
     'services': 'Services',
     'materials': 'Materials',
@@ -337,6 +353,11 @@ def status_label(status, for_vendor=False):
     return STATUS_LABELS.get(status, status.replace('_', ' ').title())
 
 
+def status_help(status, for_vendor=False):
+    hints = STATUS_HELP_VENDOR if for_vendor else STATUS_HELP
+    return hints.get(status, '')
+
+
 def vendor_inbox_departments(vendor_id):
     dept_ids = (
         db.session.query(Invoice.department_id)
@@ -451,7 +472,9 @@ def inbox():
     else:
         vendor_view = None
         action_count = 0
-        q = Invoice.query.filter_by(city_id=current_user.city_id)
+        q = Invoice.query.filter_by(city_id=current_user.city_id).filter(
+            Invoice.status != 'returned',
+        )
         departments = city_departments(current_user.city_id)
         if dept_filter:
             q = q.filter_by(department_id=dept_filter)
@@ -465,6 +488,7 @@ def inbox():
     invoices = q.order_by(Invoice.submitted_at.desc()).all()
 
     label_fn = (lambda s: status_label(s, for_vendor=True)) if current_user.is_vendor() else status_label
+    help_fn = (lambda s: status_help(s, for_vendor=True)) if current_user.is_vendor() else status_help
 
     return render_template(
         'inbox.html',
@@ -473,6 +497,7 @@ def inbox():
         dept_filter=dept_filter,
         dept_counts=dept_counts,
         status_label=label_fn,
+        status_help=help_fn,
         vendor_view=vendor_view,
         action_count=action_count,
     )
@@ -647,11 +672,13 @@ def invoice_detail(invoice_id):
     if current_user.is_vendor():
         activities = [a for a in activities if a.kind != 'internal']
     label_fn = (lambda s: status_label(s, for_vendor=True)) if current_user.is_vendor() else status_label
+    help_fn = (lambda s: status_help(s, for_vendor=True)) if current_user.is_vendor() else status_help
     return render_template(
         'invoice/detail.html',
         invoice=invoice,
         activities=activities,
         status_label=label_fn,
+        status_help=help_fn,
         po_line_category_label=po_line_category_label,
     )
 

@@ -33,6 +33,16 @@ Finance-AP · Transit · Fire · Public Works · Police · Parks and Rec
 
 > Stop emailing everything to AP. Vendors send to the right department the first time. The city sees one organized queue per department.
 
+## Director demo script (~3 min)
+
+1. **Sign in as city** (`ap@demo.city` / `demo123`) → **Incoming**.
+2. Click the **Transit** tab — tab numbers show invoices in **received** or **in review** for that department.
+3. Open **INV-7841** (Transit) → review PDF → **Mark in review** → **Mark approved for payment**. Note the sidebar: paper approval still happens in your office.
+4. **Logout** → sign in as **vendor** (`vendor@contractor.com` / `demo123`) → **Needs action** → open **INV-7720** → **Fix and resubmit** (shows the return workflow).
+5. Back to city → Transit tab stays focused on active work (returned invoices wait with the vendor).
+
+**AP: Invite vendor** in the nav is for AP onboarding — skip it in a department-director pitch.
+
 ## Deploy live (Render — free)
 
 1. Push this repo to GitHub (see below).

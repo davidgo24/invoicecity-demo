@@ -1,28 +1,28 @@
 {% extends "base.html" %}
 {% block title %}Incoming{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-start mb-3 mb-md-4 flex-wrap gap-2">
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-3">
     <div>
-        <h1 class="h3 mb-1">
+        <h1 class="page-title mb-1">
             {% if current_user.is_vendor() %}My invoices{% else %}Incoming invoices{% endif %}
         </h1>
         {% if current_user.is_vendor() and vendor_view == 'active' %}
-        <p class="text-muted mb-0 small">Track invoices in progress — filter by department</p>
+        <p class="page-subtitle mb-0">Invoices waiting on the city. Switch to <strong>Needs action</strong> when the city sends one back.</p>
         {% elif current_user.is_vendor() %}
-        <p class="text-muted mb-0 small">Invoices the city sent back — fix and resubmit</p>
+        <p class="page-subtitle mb-0">These were sent back by the city. Open one, fix the issue, and resubmit.</p>
         {% else %}
-        <p class="text-muted mb-0 small">Filtered by department — vendors route on submit</p>
+        <p class="page-subtitle mb-0">Open a file to review the PDF and update status. Use the department tabs to focus your queue.</p>
         {% endif %}
     </div>
     {% if current_user.is_vendor() %}
-    <a href="{{ url_for('submit_invoice') }}" class="btn btn-success w-100 w-sm-auto">
-        <i class="bi bi-plus-lg"></i> Submit invoice
+    <a href="{{ url_for('submit_invoice') }}" class="btn btn-primary w-100 w-sm-auto">
+        Submit new invoice
     </a>
     {% endif %}
 </div>
 
 {% if current_user.is_vendor() %}
-<div class="dept-tabs-scroll mb-3">
+<div class="dept-tabs-scroll mb-1">
     <div class="dept-tabs">
         <a href="{{ url_for('inbox', view='active') }}" class="dept-tab {% if vendor_view == 'active' %}active{% endif %}">
             In progress
@@ -33,15 +33,33 @@
         </a>
     </div>
 </div>
-{% endif %}
-
-{% if departments %}
-<div class="dept-tabs-scroll mb-3 mb-md-4">
+<p class="tab-legend text-muted small mb-3">
+    <strong>Needs action</strong> badge = invoices the city returned to you.
+</p>
+{% if vendor_view == 'active' and departments %}
+<div class="dept-tabs-scroll mb-1">
     <div class="dept-tabs">
-        <a href="{{ url_for('inbox', view='active') if current_user.is_vendor() else url_for('inbox') }}"
-           class="dept-tab {% if not dept_filter %}active{% endif %}">All</a>
+        <a href="{{ url_for('inbox', view='active') }}"
+           class="dept-tab {% if not dept_filter %}active{% endif %}">All departments</a>
         {% for dept in departments %}
-        <a href="{{ url_for('inbox', view='active', dept=dept.id) if current_user.is_vendor() else url_for('inbox', dept=dept.id) }}"
+        <a href="{{ url_for('inbox', view='active', dept=dept.id) }}"
+           class="dept-tab {% if dept_filter == dept.id %}active{% endif %}">
+            {{ dept.name }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+<p class="tab-legend text-muted small mb-3 mb-md-4">
+    Department tabs filter your in-progress list.
+</p>
+{% endif %}
+{% elif departments %}
+<div class="dept-tabs-scroll mb-1">
+    <div class="dept-tabs">
+        <a href="{{ url_for('inbox') }}"
+           class="dept-tab {% if not dept_filter %}active{% endif %}">All departments</a>
+        {% for dept in departments %}
+        <a href="{{ url_for('inbox', dept=dept.id) }}"
            class="dept-tab {% if dept_filter == dept.id %}active{% endif %}">
             {{ dept.name }}
             {% if dept_counts.get(dept.id) %}<span class="badge bg-warning text-dark ms-1">{{ dept_counts[dept.id] }}</span>{% endif %}
@@ -49,32 +67,43 @@
         {% endfor %}
     </div>
 </div>
+<p class="tab-legend text-muted small mb-3 mb-md-4">
+    Tab numbers = invoices in <strong>received</strong> or <strong>in review</strong> for that department.
+</p>
 {% endif %}
 
 {% if invoices %}
 <div class="list-group">
     {% for inv in invoices %}
-    <a href="{{ url_for('invoice_detail', invoice_id=inv.id) }}" class="list-group-item list-group-item-action invoice-list-item py-3">
+    <a href="{{ url_for('invoice_detail', invoice_id=inv.id) }}" class="list-group-item list-group-item-action invoice-list-item">
         <div class="d-flex justify-content-between align-items-start invoice-list-top">
             <div class="min-w-0">
                 <strong>{{ inv.invoice_number }}</strong>
-                <span class="text-muted">· {{ inv.department.name }}</span>
-                <div class="small text-muted">
+                <span class="invoice-dept"> · {{ inv.department.name }}</span>
+                <div class="invoice-meta">
                     {% if not current_user.is_vendor() %}{{ inv.vendor.name }} · {% endif %}${{ '%.2f'|format(inv.total_amount) }}
                 </div>
+                <div class="status-hint">{{ status_help(inv.status) }}</div>
             </div>
-            <span class="badge {% if inv.status == 'returned' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ status_label(inv.status) }}</span>
+            <span class="badge {% if inv.status == 'returned' %}status-needs-action{% else %}bg-secondary{% endif %}">{{ status_label(inv.status) }}</span>
         </div>
     </a>
     {% endfor %}
 </div>
 {% else %}
-<p class="text-muted text-center py-5">
+<div class="empty-state">
     {% if current_user.is_vendor() and vendor_view == 'action' %}
-    Nothing needs action right now.
+    <div class="empty-state-title">Nothing needs action</div>
+    <p class="empty-state-desc">When the city returns an invoice, it will show up here with instructions on what to fix.</p>
+    <a href="{{ url_for('inbox', view='active') }}" class="btn btn-outline-primary">View in progress</a>
+    {% elif current_user.is_vendor() %}
+    <div class="empty-state-title">No invoices yet</div>
+    <p class="empty-state-desc">Submit your first invoice — pick the department, upload the PDF, and enter the amount.</p>
+    <a href="{{ url_for('submit_invoice') }}" class="btn btn-primary">Submit invoice</a>
     {% else %}
-    No invoices in this view yet.
+    <div class="empty-state-title">No invoices in this view</div>
+    <p class="empty-state-desc">When vendors submit, their invoices appear here routed to the department they selected.</p>
     {% endif %}
-</p>
+</div>
 {% endif %}
 {% endblock %}

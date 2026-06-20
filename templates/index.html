@@ -1,45 +1,69 @@
 {% extends "base.html" %}
 {% block title %}InvoiceCity{% endblock %}
 {% block content %}
-<div class="text-center landing-hero col-lg-8 mx-auto px-1">
-    <h1 class="landing-title fw-bold text-primary">InvoiceCity</h1>
-    <p class="lead text-muted mt-3">
-        One front door for municipal invoicing — submit once, route to the right department, track status until paid.
+<div class="landing">
+    <h1 class="landing-title">One place to send and track city invoices</h1>
+    <p class="landing-desc">
+        Vendors submit invoices and pick which department should receive them.
+        City staff see a queue by department and update status as they process each file.
     </p>
-    <p class="text-muted">Finance, Transit, Fire, and more — vendors pick the department on every submit.</p>
 
-    <div class="row g-3 mt-4 mt-md-5">
-        <div class="col-md-6">
-            <div class="card h-100 border-success">
-                <div class="card-body py-4">
-                    <i class="bi bi-truck fs-1 text-success"></i>
-                    <h3 class="h5 mt-2">For vendors</h3>
-                    <p class="text-muted small mb-2">Bill multiple cities from one place.</p>
-                    <ul class="text-muted small text-start mb-3 ps-3">
-                        <li>Same workflow for every city you work with</li>
-                        <li>Route each invoice to the right department on submit</li>
-                        <li>See status and history without chasing AP by email</li>
-                    </ul>
-                    <a href="{{ url_for('demo_login', role='vendor') }}" class="btn btn-success w-100 w-sm-auto">Demo: Vendor</a>
-                </div>
+    <div class="how-it-works">
+        <h2>How it works</h2>
+        <div class="how-step">
+            <span class="how-step-num">1</span>
+            <div class="how-step-body">
+                <strong>Vendor submits</strong>
+                <span>Upload the PDF, choose the department (Transit, Fire, Finance, etc.), and enter amounts.</span>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card h-100 border-primary">
-                <div class="card-body py-4">
-                    <i class="bi bi-inbox fs-1 text-primary"></i>
-                    <h3 class="h5 mt-2">For cities</h3>
-                    <p class="text-muted small mb-2">Manage many vendors without inbox chaos.</p>
-                    <ul class="text-muted small text-start mb-3 ps-3">
-                        <li>Vendors submit through one portal — not scattered emails</li>
-                        <li>Invoices arrive already routed to the right department</li>
-                        <li>Each team sees its queue; AP keeps visibility across the city</li>
-                    </ul>
-                    <a href="{{ url_for('demo_login', role='city') }}" class="btn btn-primary w-100 w-sm-auto">Demo: City desk</a>
-                </div>
+        <div class="how-step">
+            <span class="how-step-num">2</span>
+            <div class="how-step-body">
+                <strong>City reviews</strong>
+                <span>Staff open the file, check the PDF, and mark it in review or approved for payment.</span>
+            </div>
+        </div>
+        <div class="how-step">
+            <span class="how-step-num">3</span>
+            <div class="how-step-body">
+                <strong>Everyone tracks status</strong>
+                <span>Vendors see updates in their inbox. If something is wrong, the city returns it — vendor fixes and resubmits.</span>
             </div>
         </div>
     </div>
-    <p class="text-muted small mt-4">Password: <code>{{ demo_password }}</code></p>
+
+    <p class="mb-3" style="font-size:0.9375rem;color:var(--text-secondary);">Try the demo — pick your role:</p>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="landing-panel">
+                <h2>I&apos;m a vendor</h2>
+                <p>Submit invoices to cities and track when they&apos;re approved or paid.</p>
+                <ul>
+                    <li>Submit invoice → pick department → upload PDF</li>
+                    <li>Check <strong>In progress</strong> for status updates</li>
+                    <li>Check <strong>Needs action</strong> if the city returned something</li>
+                </ul>
+                <a href="{{ url_for('demo_login', role='vendor') }}" class="btn btn-primary">Open vendor demo</a>
+                <span class="panel-cta-label">Logs in as a contractor billing Metro City</span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="landing-panel">
+                <h2>I&apos;m city staff</h2>
+                <p>See invoices vendors routed to your departments and update their status.</p>
+                <ul>
+                    <li>Open <strong>Incoming</strong> and filter by department</li>
+                    <li>Click an invoice to view the PDF and details</li>
+                    <li>Mark in review → approved for payment → paid</li>
+                </ul>
+                <a href="{{ url_for('demo_login', role='city') }}" class="btn btn-outline-primary">Open city demo</a>
+                <span class="panel-cta-label">Logs in as AP desk for Metro City</span>
+            </div>
+        </div>
+    </div>
+
+    <p class="landing-footnote">Demo password for both roles: <code>{{ demo_password }}</code></p>
 </div>
 {% endblock %}

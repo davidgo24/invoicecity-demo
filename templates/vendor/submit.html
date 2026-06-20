@@ -3,32 +3,33 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card shadow-sm {% if resubmit %}border-warning{% else %}border-success{% endif %}">
-            <div class="card-header {% if resubmit %}bg-warning text-dark{% else %}bg-success text-white{% endif %}">
-                <h2 class="h5 mb-0">
-                    {% if resubmit %}
-                    <i class="bi bi-arrow-repeat"></i> Fix and resubmit {{ invoice.invoice_number }}
-                    {% else %}
-                    <i class="bi bi-signpost-split"></i> Route your invoice to the right department
-                    {% endif %}
-                </h2>
-            </div>
+        <div class="page-header mb-4">
+            <h1 class="page-title mb-1">
+                {% if resubmit %}Resubmit {{ invoice.invoice_number }}{% else %}Submit invoice{% endif %}
+            </h1>
+            <p class="page-subtitle">
+                {% if resubmit %}Update the fields below, then send back to the city queue.{% else %}Fill out each step — the invoice goes straight to the department you choose.{% endif %}
+            </p>
+        </div>
+
+        <div class="card">
             <div class="card-body p-4">
                 {% if resubmit %}
-                <div class="alert alert-warning small">
-                    <strong>Needs action:</strong> {{ invoice.return_reason or 'See history for details.' }}
-                    Update what they asked for, then resubmit to the same department queue.
+                <div class="alert alert-warning small mb-4">
+                    {{ invoice.return_reason or 'See history for details.' }}
                 </div>
-                {% else %}
-                <p class="text-muted">Billing <strong>{{ city.name }}</strong> — select who should receive this invoice. It goes there immediately.</p>
                 {% endif %}
 
                 <form method="POST" enctype="multipart/form-data" id="invoiceForm"
                       action="{% if resubmit %}{{ url_for('resubmit_invoice', invoice_id=invoice.id) }}{% else %}{{ url_for('submit_invoice') }}{% endif %}">
-                    <div class="mb-4 p-3 bg-light rounded border">
-                        <label for="department_id" class="form-label fw-semibold">Department</label>
+
+                    <div class="form-step">
+                        <span class="form-step-label">Step 1</span>
+                        <div class="form-step-title">Who should receive this?</div>
+                        <p class="form-step-desc">Pick the city department this invoice is for — Transit, Fire, Finance-AP, etc. It skips AP sorting and goes directly to their queue.</p>
+                        <label for="department_id" class="form-label">Department</label>
                         <select class="form-select form-select-lg" id="department_id" name="department_id" required>
-                            <option value="">— Who should receive this invoice? —</option>
+                            <option value="">Select department…</option>
                             {% for dept in departments %}
                             <option value="{{ dept.id }}"
                                 {% if resubmit and invoice.department_id == dept.id %}selected{% endif %}>
@@ -38,12 +39,16 @@
                         </select>
                     </div>
 
+                    <div class="form-step">
+                        <span class="form-step-label">Step 2</span>
+                        <div class="form-step-title">Invoice details</div>
+                        <p class="form-step-desc">Basic info from your invoice. If you have a PO number, enter it — you&apos;ll allocate amounts to PO fund lines in the next step.</p>
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
                             <label class="form-label">PO number <span class="text-muted fw-normal">(optional)</span></label>
                             <input type="text" name="po_number" id="po_number" class="form-control" placeholder="PO-1042"
                                    autocomplete="off" value="{{ invoice.po_number or '' if resubmit else '' }}">
-                            <div class="form-text">When billing against a PO, allocate amounts to each PO line — including tax lines reserved on the order.</div>
+                            <div class="form-text">Optional. Demo POs: <code>PO-1042</code> or <code>PO-0888</code></div>
                             <div id="poLookupStatus" class="small mt-1"></div>
                         </div>
                         <div class="col-12 col-md-6">
@@ -72,8 +77,13 @@
                         <div id="poAllocBody" class="po-alloc-list"></div>
                         <div class="text-end small text-muted mt-2">Invoice total: <strong id="allocTotal">$0.00</strong></div>
                     </div>
+                    </div>
 
-                    <div class="row g-3 mt-3" id="amountFields">
+                    <div class="form-step" id="amountFields">
+                        <span class="form-step-label">Step 3</span>
+                        <div class="form-step-title">Amount</div>
+                        <p class="form-step-desc">Enter the total, or let PO line allocations calculate it for you.</p>
+                    <div class="row g-3">
                         <div class="col-12 col-md-4" id="amountCol">
                             <label class="form-label">Amount ($) <span id="amountHint" class="text-muted fw-normal small">subtotal</span></label>
                             <input type="number" step="0.01" name="amount" id="amount" class="form-control" required
@@ -91,20 +101,25 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label">Notes <span class="text-muted fw-normal">(optional)</span></label>
-                            <textarea name="description" class="form-control" rows="2" placeholder="Anything AP or the department should know">{{ invoice.description or '' if resubmit else '' }}</textarea>
+                            <textarea name="description" class="form-control" rows="2" placeholder="Anything the department should know">{{ invoice.description or '' if resubmit else '' }}</textarea>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">
-                                Invoice PDF
-                                {% if resubmit %}<span class="text-muted fw-normal">(optional — keeps current if blank)</span>{% endif %}
-                            </label>
+                    </div>
+                    </div>
+
+                    <div class="form-step">
+                        <span class="form-step-label">Step 4</span>
+                        <div class="form-step-title">Upload PDF</div>
+                        <p class="form-step-desc">Attach the invoice document the city will review.</p>
+                        <div class="col-12 px-0">
+                            <label class="form-label">Invoice PDF</label>
                             <input type="file" name="pdf" class="form-control" accept=".pdf" {% if not resubmit %}required{% endif %}>
                             {% if resubmit and invoice.pdf_filename %}
-                            <div class="form-text">Current file on record — upload only if you have a corrected PDF.</div>
+                            <div class="form-text">Leave blank to keep the current PDF on file.</div>
                             {% endif %}
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-success btn-lg w-100 mt-4">
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
                         <i class="bi bi-send"></i>
                         {% if resubmit %}Resubmit to department{% else %}Submit to selected department{% endif %}
                     </button>

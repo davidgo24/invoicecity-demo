@@ -3,23 +3,32 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-12 col-md-5">
-        <div class="card shadow-sm">
+        <div class="page-header text-center mb-4">
+            <h1 class="page-title">Sign in</h1>
+            <p class="page-subtitle mx-auto">Vendors submit and track invoices. City staff review incoming files by department.</p>
+        </div>
+        <div class="card auth-card">
             <div class="card-body p-4">
-                <h2 class="h4 mb-3">Login</h2>
                 <form method="POST">
                     <div class="mb-3">
                         <label class="form-label">Email</label>
-                        <input type="email" name="email" class="form-control" required>
+                        <input type="email" name="email" class="form-control" placeholder="you@company.com" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Password</label>
                         <input type="password" name="password" class="form-control" required>
                     </div>
-                    <button class="btn btn-primary w-100">Login</button>
+                    <button class="btn btn-primary w-100">Sign in</button>
                 </form>
-                <p class="small text-muted mt-3 mb-0">Demo: <code>ap@demo.city</code> or <code>vendor@contractor.com</code> / <code>demo123</code></p>
+                <div class="guide-box mt-4 mb-0">
+                    <div class="guide-box-title">Demo accounts</div>
+                    <p class="mb-1"><strong>City:</strong> <code>ap@demo.city</code></p>
+                    <p class="mb-0"><strong>Vendor:</strong> <code>vendor@contractor.com</code></p>
+                    <p class="mt-2 mb-0">Password: <code>demo123</code></p>
+                </div>
             </div>
         </div>
+        <p class="text-center mt-3 mb-0"><a href="{{ url_for('index') }}">← Back to home</a></p>
     </div>
 </div>
 {% endblock %}
