@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Register City — InvoiceCity{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h2 class="mb-4">Register Your City</h2>
+                <p class="text-muted">Create a master account for your city. You need <strong>2 finance department representatives</strong> to get started.</p>
+                <form method="POST">
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">City Details</h5>
+                        <div class="mb-3">
+                            <label for="city_name" class="form-label">City Name</label>
+                            <input type="text" class="form-control" id="city_name" name="city_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <input type="text" class="form-control" id="address" name="address">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">Finance Rep #1</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="rep1_name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="rep1_name" name="rep1_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="rep1_email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="rep1_email" name="rep1_email" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="rep1_password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="rep1_password" name="rep1_password" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">Finance Rep #2</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="rep2_name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="rep2_name" name="rep2_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="rep2_email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="rep2_email" name="rep2_email" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="rep2_password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="rep2_password" name="rep2_password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100">Create City Invoice Hub</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

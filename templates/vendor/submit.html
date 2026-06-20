@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% block title %}{% if resubmit %}Resubmit invoice{% else %}Submit invoice{% endif %}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm {% if resubmit %}border-warning{% else %}border-success{% endif %}">
+            <div class="card-header {% if resubmit %}bg-warning text-dark{% else %}bg-success text-white{% endif %}">
+                <h2 class="h5 mb-0">
+                    {% if resubmit %}
+                    <i class="bi bi-arrow-repeat"></i> Fix and resubmit {{ invoice.invoice_number }}
+                    {% else %}
+                    <i class="bi bi-signpost-split"></i> Route your invoice to the right department
+                    {% endif %}
+                </h2>
+            </div>
+            <div class="card-body p-4">
+                {% if resubmit %}
+                <div class="alert alert-warning small">
+                    <strong>Needs action:</strong> {{ invoice.return_reason or 'See history for details.' }}
+                    Update what they asked for, then resubmit to the same department queue.
+                </div>
+                {% else %}
+                <p class="text-muted">Billing <strong>{{ city.name }}</strong> — select who should receive this invoice. It goes there immediately.</p>
+                {% endif %}
+
+                <form method="POST" enctype="multipart/form-data" id="invoiceForm"
+                      action="{% if resubmit %}{{ url_for('resubmit_invoice', invoice_id=invoice.id) }}{% else %}{{ url_for('submit_invoice') }}{% endif %}">
+                    <div class="mb-4 p-3 bg-light rounded border">
+                        <label for="department_id" class="form-label fw-semibold">Department</label>
+                        <select class="form-select form-select-lg" id="department_id" name="department_id" required>
+                            <option value="">— Who should receive this invoice? —</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}"
+                                {% if resubmit and invoice.department_id == dept.id %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">PO number <span class="text-muted fw-normal">(optional)</span></label>
+                            <input type="text" name="po_number" id="po_number" class="form-control" placeholder="PO-1042"
+                                   autocomplete="off" value="{{ invoice.po_number or '' if resubmit else '' }}">
+                            <div class="form-text">When billing against a PO, allocate amounts to each PO line — including tax lines reserved on the order.</div>
+                            <div id="poLookupStatus" class="small mt-1"></div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Invoice number</label>
+                            <input type="text" name="invoice_number" class="form-control" required
+                                   value="{{ invoice.invoice_number if resubmit else '' }}">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Invoice date</label>
+                            <input type="date" name="invoice_date" class="form-control" required
+                                   value="{{ invoice.invoice_date.isoformat() if resubmit else '' }}">
+                        </div>
+                    </div>
+
+                    <div id="poAllocSection" class="mt-4 p-3 border rounded d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                            <div>
+                                <h3 class="h6 mb-0">PO line allocations</h3>
+                                <span class="small text-muted" id="poDeptHint"></span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addAllocBtn">
+                                <i class="bi bi-plus-lg"></i> Add PO line
+                            </button>
+                        </div>
+                        <p class="small text-muted mb-3">Each row charges part of this invoice against a fund line on the purchase order. Put sales tax on the tax line — cities often reserve one for that.</p>
+                        <div id="poAllocBody" class="po-alloc-list"></div>
+                        <div class="text-end small text-muted mt-2">Invoice total: <strong id="allocTotal">$0.00</strong></div>
+                    </div>
+
+                    <div class="row g-3 mt-3" id="amountFields">
+                        <div class="col-12 col-md-4" id="amountCol">
+                            <label class="form-label">Amount ($) <span id="amountHint" class="text-muted fw-normal small">subtotal</span></label>
+                            <input type="number" step="0.01" name="amount" id="amount" class="form-control" required
+                                   value="{{ '%.2f'|format(invoice.amount) if resubmit and not invoice.line_items else '' }}">
+                        </div>
+                        <div class="col-12 col-md-4" id="taxCol">
+                            <label class="form-label">Tax (%)</label>
+                            <input type="number" step="0.01" name="tax_rate" id="tax_rate" class="form-control"
+                                   value="{{ invoice.tax_rate if resubmit else 0 }}" required>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label">Total ($)</label>
+                            <input type="text" name="total_amount" id="total_amount" class="form-control" readonly
+                                   value="{{ '%.2f'|format(invoice.total_amount) if resubmit else '0.00' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Notes <span class="text-muted fw-normal">(optional)</span></label>
+                            <textarea name="description" class="form-control" rows="2" placeholder="Anything AP or the department should know">{{ invoice.description or '' if resubmit else '' }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">
+                                Invoice PDF
+                                {% if resubmit %}<span class="text-muted fw-normal">(optional — keeps current if blank)</span>{% endif %}
+                            </label>
+                            <input type="file" name="pdf" class="form-control" accept=".pdf" {% if not resubmit %}required{% endif %}>
+                            {% if resubmit and invoice.pdf_filename %}
+                            <div class="form-text">Current file on record — upload only if you have a corrected PDF.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-lg w-100 mt-4">
+                        <i class="bi bi-send"></i>
+                        {% if resubmit %}Resubmit to department{% else %}Submit to selected department{% endif %}
+                    </button>
+                    {% if resubmit %}
+                    <a href="{{ url_for('invoice_detail', invoice_id=invoice.id) }}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_head %}
+{% if resubmit %}
+<script id="resubmitPrefill" type="application/json">{{ existing_allocations | tojson }}</script>
+{% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const poInput = document.getElementById('po_number');
+    const poStatus = document.getElementById('poLookupStatus');
+    const allocSection = document.getElementById('poAllocSection');
+    const allocBody = document.getElementById('poAllocBody');
+    const addAllocBtn = document.getElementById('addAllocBtn');
+    const poDeptHint = document.getElementById('poDeptHint');
+    const deptSelect = document.getElementById('department_id');
+    const amountInput = document.getElementById('amount');
+    const taxInput = document.getElementById('tax_rate');
+    const totalInput = document.getElementById('total_amount');
+    const allocTotalEl = document.getElementById('allocTotal');
+    const amountHint = document.getElementById('amountHint');
+    const taxCol = document.getElementById('taxCol');
+    const amountCol = document.getElementById('amountCol');
+
+    const prefillEl = document.getElementById('resubmitPrefill');
+    const savedAllocations = prefillEl ? JSON.parse(prefillEl.textContent || '[]') : [];
+
+    let poLines = [];
+    let usingPo = false;
+    let lookupTimer = null;
+
+    function money(n) {
+        return '$' + n.toFixed(2);
+    }
+
+    function lineOptionLabel(line) {
+        return `Line ${line.line_number} · ${line.category_label} · ${line.description} (${money(line.budget_amount)} budget)`;
+    }
+
+    function calcAllocTotal() {
+        let total = 0;
+        allocBody.querySelectorAll('.po-amount').forEach(el => {
+            total += parseFloat(el.value) || 0;
+        });
+        total = Math.round(total * 100) / 100;
+        allocTotalEl.textContent = money(total);
+        if (usingPo) {
+            amountInput.value = total.toFixed(2);
+            totalInput.value = total.toFixed(2);
+        }
+        return total;
+    }
+
+    function calcGrandTotal() {
+        const a = parseFloat(amountInput.value) || 0;
+        const t = parseFloat(taxInput.value) || 0;
+        totalInput.value = (Math.round((a + a * t / 100) * 100) / 100).toFixed(2);
+    }
+
+    function buildLineSelect(selectedId = '') {
+        const select = document.createElement('select');
+        select.name = 'po_line_id';
+        select.className = 'form-select po-line-select';
+        select.required = true;
+        const blank = document.createElement('option');
+        blank.value = '';
+        blank.textContent = '— Select PO line —';
+        select.appendChild(blank);
+        poLines.forEach(line => {
+            const opt = document.createElement('option');
+            opt.value = line.id;
+            opt.textContent = lineOptionLabel(line);
+            if (String(line.id) === String(selectedId)) opt.selected = true;
+            select.appendChild(opt);
+        });
+        return select;
+    }
+
+    function addAllocRow(lineId = '', amount = '') {
+        const row = document.createElement('div');
+        row.className = 'po-alloc-row';
+
+        const header = document.createElement('div');
+        header.className = 'po-alloc-row-header';
+        const headerLabel = document.createElement('span');
+        headerLabel.className = 'form-label';
+        headerLabel.textContent = 'PO line';
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'btn btn-sm btn-outline-danger';
+        rm.title = 'Remove';
+        rm.innerHTML = '&times;';
+        rm.addEventListener('click', () => {
+            row.remove();
+            if (allocBody.children.length === 0) addAllocRow();
+            calcAllocTotal();
+        });
+        header.appendChild(headerLabel);
+        header.appendChild(rm);
+
+        const amtLabel = document.createElement('div');
+        amtLabel.className = 'po-amount-label';
+        amtLabel.textContent = 'Amount ($)';
+
+        const amt = document.createElement('input');
+        amt.type = 'number';
+        amt.name = 'po_line_amount';
+        amt.className = 'form-control po-amount';
+        amt.min = '0';
+        amt.step = '0.01';
+        amt.placeholder = '0.00';
+        amt.required = true;
+        if (amount !== '') amt.value = amount;
+        amt.addEventListener('input', calcAllocTotal);
+
+        row.appendChild(header);
+        row.appendChild(buildLineSelect(lineId));
+        row.appendChild(amtLabel);
+        row.appendChild(amt);
+        allocBody.appendChild(row);
+        calcAllocTotal();
+    }
+
+    function setPoMode(active) {
+        usingPo = active;
+        allocSection.classList.toggle('d-none', !active);
+        taxCol.classList.toggle('d-none', active);
+        amountCol.classList.toggle('d-none', active);
+        amountHint.textContent = active ? 'from PO lines' : 'subtotal';
+        taxInput.required = !active;
+        if (active) {
+            amountInput.readOnly = true;
+            taxInput.value = '0';
+        } else {
+            amountInput.readOnly = false;
+            allocBody.innerHTML = '';
+            poDeptHint.textContent = '';
+            calcGrandTotal();
+        }
+    }
+
+    function clearPoLookup(message = '', isError = false) {
+        poLines = [];
+        setPoMode(false);
+        poStatus.textContent = message;
+        poStatus.className = 'small mt-1 ' + (isError ? 'text-danger' : 'text-muted');
+    }
+
+    async function lookupPo(restoreAllocations = null) {
+        const poNumber = poInput.value.trim();
+        if (!poNumber) {
+            clearPoLookup('');
+            return;
+        }
+
+        poStatus.textContent = 'Looking up PO…';
+        poStatus.className = 'small mt-1 text-muted';
+
+        try {
+            const res = await fetch(`/api/purchase-order?po_number=${encodeURIComponent(poNumber)}`);
+            const data = await res.json();
+            if (!res.ok) {
+                clearPoLookup(data.error || 'PO not found.', true);
+                return;
+            }
+
+            poLines = data.lines || [];
+            poDeptHint.textContent = `PO ${data.po_number} · ${data.department_name}`;
+            poStatus.textContent = `${poLines.length} fund line(s) on this PO.`;
+            poStatus.className = 'small mt-1 text-success';
+
+            if (data.department_id) {
+                deptSelect.value = String(data.department_id);
+            }
+
+            setPoMode(true);
+            allocBody.innerHTML = '';
+
+            if (restoreAllocations && restoreAllocations.length) {
+                restoreAllocations.forEach(a => addAllocRow(a.po_line_id, a.amount));
+            } else {
+                const nonTax = poLines.filter(l => l.category !== 'tax');
+                const taxLine = poLines.find(l => l.category === 'tax');
+                if (nonTax.length) addAllocRow(nonTax[0].id);
+                else addAllocRow();
+                if (taxLine) addAllocRow(taxLine.id);
+            }
+        } catch (err) {
+            clearPoLookup('Could not look up PO.', true);
+        }
+    }
+
+    poInput.addEventListener('input', () => {
+        clearTimeout(lookupTimer);
+        lookupTimer = setTimeout(() => lookupPo(), 350);
+    });
+
+    addAllocBtn.addEventListener('click', () => addAllocRow());
+    amountInput.addEventListener('input', () => { if (!usingPo) calcGrandTotal(); });
+    taxInput.addEventListener('input', calcGrandTotal);
+    document.getElementById('invoiceForm').addEventListener('submit', () => {
+        if (usingPo) calcAllocTotal();
+        else calcGrandTotal();
+    });
+
+    if (poInput.value.trim()) {
+        lookupPo(savedAllocations.length ? savedAllocations : null);
+    } else {
+        calcGrandTotal();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Invite Vendor — {{ city.name }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h2 class="mb-4"><i class="bi bi-person-plus"></i> Invite a Vendor</h2>
+                <p class="text-muted">Send an invitation so a vendor can create an account and submit invoices to {{ city.name }}.</p>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="vendor_company" class="form-label">Company Name</label>
+                        <input type="text" class="form-control" id="vendor_company" name="vendor_company" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vendor_email" class="form-label">Vendor Email</label>
+                        <input type="email" class="form-control" id="vendor_email" name="vendor_email" required>
+                        <div class="form-text">The vendor will use this email to create their account.</div>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-send"></i> Send Invitation
+                    </button>
+                </form>
+                <a href="{{ url_for('city_dashboard', city_id=city.id) }}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

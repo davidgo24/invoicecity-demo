@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}InvoiceCity{% endblock %}
+{% block content %}
+<div class="text-center landing-hero col-lg-8 mx-auto px-1">
+    <h1 class="landing-title fw-bold text-primary">InvoiceCity</h1>
+    <p class="lead text-muted mt-3">
+        One front door for municipal invoicing — submit once, route to the right department, track status until paid.
+    </p>
+    <p class="text-muted">Finance, Transit, Fire, and more — vendors pick the department on every submit.</p>
+
+    <div class="row g-3 mt-4 mt-md-5">
+        <div class="col-md-6">
+            <div class="card h-100 border-success">
+                <div class="card-body py-4">
+                    <i class="bi bi-truck fs-1 text-success"></i>
+                    <h3 class="h5 mt-2">For vendors</h3>
+                    <p class="text-muted small mb-2">Bill multiple cities from one place.</p>
+                    <ul class="text-muted small text-start mb-3 ps-3">
+                        <li>Same workflow for every city you work with</li>
+                        <li>Route each invoice to the right department on submit</li>
+                        <li>See status and history without chasing AP by email</li>
+                    </ul>
+                    <a href="{{ url_for('demo_login', role='vendor') }}" class="btn btn-success w-100 w-sm-auto">Demo: Vendor</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100 border-primary">
+                <div class="card-body py-4">
+                    <i class="bi bi-inbox fs-1 text-primary"></i>
+                    <h3 class="h5 mt-2">For cities</h3>
+                    <p class="text-muted small mb-2">Manage many vendors without inbox chaos.</p>
+                    <ul class="text-muted small text-start mb-3 ps-3">
+                        <li>Vendors submit through one portal — not scattered emails</li>
+                        <li>Invoices arrive already routed to the right department</li>
+                        <li>Each team sees its queue; AP keeps visibility across the city</li>
+                    </ul>
+                    <a href="{{ url_for('demo_login', role='city') }}" class="btn btn-primary w-100 w-sm-auto">Demo: City desk</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p class="text-muted small mt-4">Password: <code>{{ demo_password }}</code></p>
+</div>
+{% endblock %}

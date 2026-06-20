@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}{{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+<a href="{{ url_for('inbox') }}" class="btn btn-outline-secondary mb-3 w-100 w-sm-auto">&larr; Back</a>
+
+<div class="file-header mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+            <h1 class="h3 mb-1">{{ invoice.invoice_number }}</h1>
+            <p class="mb-0 text-muted file-header-meta">
+                Routed to <strong class="text-primary">{{ invoice.department.name }}</strong>
+                · {{ invoice.vendor.name }} · ${{ '%.2f'|format(invoice.total_amount) }}
+            </p>
+        </div>
+        <span class="badge fs-6 {% if invoice.status == 'returned' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ status_label(invoice.status) }}</span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">Summary</div>
+            <div class="card-body">
+                <dl class="row mb-0 small summary-dl">
+                    <dt class="col-4">PO</dt><dd class="col-8">{{ invoice.po_number or '—' }}</dd>
+                    <dt class="col-4">Date</dt><dd class="col-8">{{ invoice.invoice_date }}</dd>
+                    <dt class="col-4">Description</dt><dd class="col-8">{{ invoice.description or '—' }}</dd>
+                    {% if not invoice.line_items %}
+                    <dt class="col-4">Amount</dt><dd class="col-8">${{ '%.2f'|format(invoice.amount) }}</dd>
+                    {% if invoice.tax_rate %}
+                    <dt class="col-4">Tax</dt><dd class="col-8">{{ '%.2f'|format(invoice.tax_rate) }}%</dd>
+                    {% endif %}
+                    {% endif %}
+                </dl>
+                {% if invoice.pdf_filename %}
+                <a href="{{ url_for('uploaded_file', filename=invoice.pdf_filename) }}" class="btn btn-sm btn-outline-primary mt-3" target="_blank">Open PDF</a>
+                {% endif %}
+
+                {% if invoice.line_items %}
+                <div class="mt-4">
+                    <h3 class="h6">PO line allocations{% if invoice.po_number %} <span class="text-muted fw-normal">· {{ invoice.po_number }}</span>{% endif %}</h3>
+                    <p class="small text-muted">Which fund lines on the purchase order this invoice draws from.</p>
+
+                    <div class="po-alloc-cards d-md-none">
+                        {% for item in invoice.line_items %}
+                        <div class="po-alloc-card">
+                            <div class="po-alloc-card-line">
+                                Line {{ item.po_line.line_number }}
+                                <span class="badge ms-1 {% if item.po_line.category == 'tax' %}bg-warning text-dark{% else %}bg-light text-dark border{% endif %}">
+                                    {{ po_line_category_label(item.po_line.category) }}
+                                </span>
+                            </div>
+                            <div class="po-alloc-card-desc">{{ item.po_line.description }}</div>
+                            <div class="po-alloc-card-meta">
+                                <span class="text-muted">PO budget ${{ '%.2f'|format(item.po_line.budget_amount) }}</span>
+                                <span class="fw-semibold">This invoice ${{ '%.2f'|format(item.amount) }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="text-end fw-semibold pt-2 border-top mt-2">
+                            Invoice total ${{ '%.2f'|format(invoice.total_amount) }}
+                        </div>
+                    </div>
+
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Line</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th class="text-end">PO budget</th>
+                                    <th class="text-end">This invoice</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in invoice.line_items %}
+                                <tr>
+                                    <td>{{ item.po_line.line_number }}</td>
+                                    <td>
+                                        <span class="badge {% if item.po_line.category == 'tax' %}bg-warning text-dark{% else %}bg-light text-dark border{% endif %}">
+                                            {{ po_line_category_label(item.po_line.category) }}
+                                        </span>
+                                    </td>
+                                    <td>{{ item.po_line.description }}</td>
+                                    <td class="text-end">${{ '%.2f'|format(item.po_line.budget_amount) }}</td>
+                                    <td class="text-end fw-semibold">${{ '%.2f'|format(item.amount) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4" class="text-end fw-semibold">Invoice total</td>
+                                    <td class="text-end fw-semibold">${{ '%.2f'|format(invoice.total_amount) }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if invoice.return_reason %}
+                <div class="alert alert-warning mt-3 mb-0 small"><strong>Return reason:</strong> {{ invoice.return_reason }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">History</div>
+            <ul class="list-group list-group-flush">
+                {% for a in activities %}
+                <li class="list-group-item small">
+                    <span class="text-muted">{{ a.created_at.strftime('%b %d, %I:%M %p') }}</span> — {{ a.body }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    {% if current_user.is_vendor() and invoice.status == 'returned' %}
+    <div class="col-lg-5">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">Needs action</div>
+            <div class="card-body d-grid gap-2">
+                <p class="small text-muted mb-0">The city flagged this invoice. Update what they asked for and resubmit it to their queue.</p>
+                {% if invoice.return_reason %}
+                <div class="alert alert-warning small mb-0"><strong>Reason:</strong> {{ invoice.return_reason }}</div>
+                {% endif %}
+                <a href="{{ url_for('resubmit_invoice', invoice_id=invoice.id) }}" class="btn btn-success btn-lg">
+                    <i class="bi bi-arrow-repeat"></i> Fix and resubmit
+                </a>
+            </div>
+        </div>
+    </div>
+    {% elif current_user.is_city_staff() %}
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">Update status</div>
+            <div class="card-body d-grid gap-2">
+                {% if invoice.status == 'received' %}
+                <form method="POST" action="{{ url_for('invoice_action', invoice_id=invoice.id) }}">
+                    <input type="hidden" name="action" value="in_review">
+                    <button class="btn btn-outline-primary w-100">Mark in review</button>
+                </form>
+                {% endif %}
+                {% if invoice.status in ('received', 'in_review') %}
+                <form method="POST" action="{{ url_for('invoice_action', invoice_id=invoice.id) }}" class="d-flex gap-2">
+                    <input type="hidden" name="action" value="approve">
+                    <button class="btn btn-success flex-grow-1">Mark approved for payment</button>
+                </form>
+                <form method="POST" action="{{ url_for('invoice_action', invoice_id=invoice.id) }}" class="d-flex gap-2 action-form-row">
+                    <input type="hidden" name="action" value="return">
+                    <input type="text" name="note" class="form-control" placeholder="Reason for return" required>
+                    <button class="btn btn-outline-danger flex-shrink-0">Return</button>
+                </form>
+                {% endif %}
+                {% if invoice.status == 'approved_for_payment' %}
+                <form method="POST" action="{{ url_for('invoice_action', invoice_id=invoice.id) }}">
+                    <input type="hidden" name="action" value="paid">
+                    <button class="btn btn-primary w-100">Mark paid</button>
+                </form>
+                {% endif %}
+                {% if invoice.status == 'returned' %}
+                <form method="POST" action="{{ url_for('invoice_action', invoice_id=invoice.id) }}">
+                    <input type="hidden" name="action" value="reopen">
+                    <button class="btn btn-outline-secondary w-100">Reopen file</button>
+                </form>
+                {% endif %}
+                <form method="POST" action="{{ url_for('invoice_action', invoice_id=invoice.id) }}" class="mt-2">
+                    <input type="hidden" name="action" value="note">
+                    <div class="input-group">
+                        <input type="text" name="note" class="form-control" placeholder="Add a note" required>
+                        <button class="btn btn-outline-secondary">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

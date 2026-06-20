@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Invite vendor{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2 class="h4 mb-3">Invite a vendor</h2>
+        <p class="text-muted">They'll submit invoices directly to the department they select.</p>
+        <form method="POST" class="card card-body">
+            <div class="mb-3">
+                <label class="form-label">Vendor email</label>
+                <input type="email" name="vendor_email" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Company name</label>
+                <input type="text" name="vendor_company" class="form-control" required>
+            </div>
+            <button class="btn btn-primary w-100">Create invite link</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Departments — {{ city.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-diagram-3"></i> Department Invoice Spaces</h2>
+    <a href="{{ url_for('city_dashboard', city_id=city.id) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<div class="row">
+    {% for dept in departments %}
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 {% if dept.is_active %}border-success{% else %}border-light{% endif %}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <h5 class="card-title">{{ dept.name }}</h5>
+                    {% if dept.is_active %}
+                        <span class="badge bg-success">Active</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </div>
+                <p class="card-text small text-muted">
+                    <i class="bi bi-people"></i> {{ dept.users|length }} users
+                </p>
+                <a href="{{ url_for('department_detail', city_id=city.id, dept_id=dept.id) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-gear"></i> Manage
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
